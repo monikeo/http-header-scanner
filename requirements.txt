@@ -1,0 +1,6 @@
+requests
+rich
+fpdf
+pyOpenSSL
+tls-parser
+python-magic
