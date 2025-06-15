@@ -3,6 +3,7 @@ Core scanning functionality
 """
 
 import requests
+from datetime import datetime
 from typing import Dict, Optional
 from http_header_scanner.models.findings import SecurityAnalysisReport
 from .analyzer import SecurityAnalyzer
