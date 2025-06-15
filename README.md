@@ -15,3 +15,6 @@ The HTTP Header Security Scanner is a comprehensive cybersecurity tool for audit
 - **Actionable Reporting**: Multiple output formats (CLI, JSON, PDF, CSV)
 - **Enterprise-Ready**: Batch scanning, CI/CD integration, custom templates
 
+## Basic Usage
+```bash
+# Single URL scan
