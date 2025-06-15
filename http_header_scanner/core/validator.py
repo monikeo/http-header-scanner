@@ -13,7 +13,7 @@ class HeaderValidator:
 
     def validate(self, header: str, value: str) -> Tuple[RiskLevel, str, float]:
         """
-        Validate a heade with context-aware checks
+        Validate a header with context-aware checks
 
         Returns:
             Tuple (risk_level, issue_description, cvss_score)
@@ -31,7 +31,7 @@ class HeaderValidator:
         if header == "Strict-Transport-Security":
             return self._validate_hsts(value, framework)
         elif header == "Content-Security-Policy":
-            return self._validate_csp(valie, framework)
+            return self._validate_csp(value, framework)
         elif header == "Set-Cookie":
             return self._validate_cookie(value, framework)
 
@@ -50,7 +50,7 @@ class HeaderValidator:
         if "max-age" not in value:
             return RiskLevel.HIGH, "Missing max-age directives", 7.0
 
-        max_age_match = re.search(r"max-age=(\d+)", value)
+        max_age_match = re.search(r"max-age\s*=\s*(\d+)", value, re.IGNORECASE)
         if not max_age_match:
             return RiskLevel.HIGH, "Invalid max-age value", 7.0
 
@@ -68,7 +68,7 @@ class HeaderValidator:
 
     def _validate_csp(self, value: str, framework: Optional[str]) -> Tuple[RiskLevel, str, float]:
         """
-            Validate COntent-Security-Policy header
+            Validate Content-Security-Policy header
         """
         if not value:
             return RiskLevel.CRITICAL, "Header missing", 9.0
