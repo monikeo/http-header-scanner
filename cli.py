@@ -13,6 +13,7 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.box import SIMPLE_HEAVY
 from rich.text import Text
+from rich.progress import track
 
 from http_header_scanner.core.scanner import HeaderScanner
 from http_header_scanner.utils.export import ReportExporter
@@ -36,9 +37,8 @@ def main():
         help="File containing URLs to scan (one per line)"
     )
     target_group.add_argument(
-        "-b", "--batch",
-        action="store_true",
-        help="Enable batch mode for multiple URLs"
+        "-d", "--domain",
+        help="Scan entire domain (discover URLs)"
     )
 
     # Scan options
@@ -50,19 +50,26 @@ def main():
         help="Request timeout in seconds (default: 10)"
     )
     scan_group.add_argument(
-        "--user-agent",
-        default="SecurityScanner/1.0",
-        help="Custom User-Agent string"
+        "--threads",
+        type=int,
+        default=5,
+        help="Concurrent scanning threads (default: 5)"
     )
     scan_group.add_argument(
-        "--hide-sensitive",
-        action="store_true",
-        help="Hide server/version information in output"
+        "--user-agent",
+        default="SecurityScanner/2.0",
+        help="Custom User-Agent string"
     )
     scan_group.add_argument(
         "--full",
         action="store_true",
         help="Show full header values (not truncated)"
+    )
+    scan_group.add_argument(
+        "--crawl",
+        type=int,
+        default=0,
+        help="Crawl depth for domain scanning (0=disabled)"
     )
 
     # Output options
@@ -83,22 +90,30 @@ def main():
         action="store_true",
         help="Enable verbose output"
     )
+    output_group.add_argument(
+        "--export-vulns",
+        action="store_true",
+        help="Export only vulnerability findings"
+    )
 
     args = parser.parse_args()
 
-    if not args.url and not args.input_file:
+    # Validate input
+    if not args.url and not args.input_file and not args.domain:
         console.print("[red]Error: No target specified. Use --url or --input-file[/red]")
         sys.exit(1)
 
     scanner = HeaderScanner()
+    reports = []
 
     try:
+        # Single URL scan
         if args.url:
-            reports = [scanner.scan(
+            reports.append(scanner.scan(
                 args.url,
                 timeout=args.timeout,
                 user_agent=args.user_agent
-            )]
+            ))
         elif args.input_file:
             if not args.input_file.exists():
                 console.print(f"[red]Error: Input file not found: {args.input_file}[/red]")
@@ -111,46 +126,75 @@ def main():
                 console.print("[red]Error: No valid URLs found in input file[/red]")
                 sys.exit(1)
                 
-            reports = []
-            for url in urls:
+            for url in track(urls, description="Scanning URLs..."):
                 if args.verbose:
                     console.print(f"[yellow]Scanning: {url}[/yellow]")
                 reports.append(scanner.scan(url, timeout=args.timeout, user_agent=args.user_agent))
+        # Domain scan
+        elif args.domain:
+            from .crawler import DomainCrawler
+            crawler = DomainCrawler(args.domain, max_depth=args.crawl)
+            urls = crawler.discover()
+
+            for url in track(urls, description=f"Crawling {args.domain}"):
+                reports.append(scanner.scan(url, timeout=args.timeout, user_agent=args.user_agent))
+
     except Exception as e:
         console.print(f"[red]Error during scanning: {str(e)}[/red]")
         sys.exit(1)
 
+    # Process reports
+    if args.export_vulns:
+        reports = [r for r in reports if r['overall_risk'] != RiskLevel.PASS]
+
+    # Output handling
     if args.format == "text":
-        if args.url:
-            display_text_report(reports[0], args)
-        else:
-            for i, report in enumerate(reports):
-                display_text_report(report, args)
-                if i < len(reports) - 1:
-                    console.print("\n" + "="*80 + "\n")
+        display_text_reports(reports, args)
     elif args.format == "json":
         if args.output:
-            ReportExporter.to_json(reports[0] if args.url else reports, args.output)
+            ReportExporter.to_json(reports, args.output)
             console.print(f"[green]JSON report saved to: {args.output}[/green]")
         else:
-            console.print_json(data=reports[0] if args.url else reports)
-    elif args.format == "csv" and args.output:
-        if len(reports) > 1 or args.batch:
+            console.print_json(data=reports)
+    elif args.format == "csv":
+        if args.output:
             ReportExporter.to_csv(reports, args.output)
             console.print(f"[green]CSV report saved to: {args.output}[/green]")
         else:
-            console.print("[red]CSV export requires multiple reports (use --batch with single URL or --input-file)[/red]")
-    elif args.format == "pdf" and args.output:
+            console.print("[red]CSV export requires output file[/red]")
+    elif args.format == "pdf":
         if len(reports) == 1:
             ReportExporter.to_pdf(reports[0], args.output)
             console.print(f"[green]PDF report saved to: {args.output}[/green]")
         else:
             console.print("[red]PDF export currently supports single reports only[/red]")
-    elif args.format == "html" and args.output:
+    elif args.format == "html":
         console.print("[yellow]HTML export is not implemented yet[/yellow]")
+        """
+        if args.output:
+            ReportExporter.to_html(reports, args.output)
+            console.print(f"[green]HTML report saved to: {args.output}[/green]")
+        """
+    elif args.format == "sarif":
+        if args.output:
+            ReportExporter.to_sarif(reports, args.output)
+            console.print(f"[green]SARIF report saved to: {args.output}[/green]")
+
+def display_text_reports(reports: List[SecurityAnalysisReport], args: argparse.Namespace):
+    """Display multiple reports in rich formatted text"""
+    for i, report in enumerate(reports):
+        if i > 0:
+            console.print("\n" + "="*80 + "\n")
+        
+        display_text_report(report, args)
 
 def display_text_report(report: SecurityAnalysisReport, args: argparse.Namespace):
     """Display report in rich formatted text with enhanced security"""
+
+    # Handle missing attributes safely
+    hide_sensitive = getattr(args, 'hide_sensitive', False)
+    full_output = getattr(args, 'full', False)
+
     # Get severity counts for summary
     severity_counts = {
         RiskLevel.CRITICAL.name: 0,
@@ -158,11 +202,12 @@ def display_text_report(report: SecurityAnalysisReport, args: argparse.Namespace
         RiskLevel.MEDIUM.name: 0,
         RiskLevel.LOW.name: 0,
         RiskLevel.PASS.name: 0,
-        RiskLevel.INFO.name: 0
+        RiskLevel.INFO.name: 0,
+        RiskLevel.ERROR.name: 0
     }
     
-    for finding in report["headers"]:
-        status_name = finding["status"].name
+    for finding in report.get("headers", []):
+        status_name = finding.get("status", RiskLevel.INFO).name
         if status_name in severity_counts:
             severity_counts[status_name] += 1
     
@@ -187,6 +232,7 @@ def display_text_report(report: SecurityAnalysisReport, args: argparse.Namespace
     console.print(summary_panel)
 
     # TLS Information
+    """
     tls = report["tls_analysis"]
     tls_panel = Panel.fit(
         f"[green]TLS Version:[/green] {tls['version']} ([bold]{tls['grade']}[/bold])\n"
@@ -197,8 +243,24 @@ def display_text_report(report: SecurityAnalysisReport, args: argparse.Namespace
         padding=(1, 2)
     )
     console.print(tls_panel)
+    """
+    tls = report.get("tls_analysis")
+    if tls:
+        tls_panel = Panel.fit(
+            f"[green]TLS Version:[/green] {tls.get('version', 'Unknown')} "
+            f"([bold]{tls.get('grade', 'N/A')}[/bold])\n"
+            f"[green]Cipher Strength:[/green] {tls.get('cipher_strength', 'Unknown')}\n"
+            f"[green]Vulnerabilities:[/green] {', '.join(tls.get('vulnerabilities', [])) or 'None found'}",
+            title="TLS Configuration Analysis",
+            border_style="yellow",
+            padding=(1, 2)
+        )
+        console.print(tls_panel)
+    else:
+        console.print("[yellow]No TLS analysis available[/yellow]")
 
     # Framework Information
+    """
     if report.get("framework_analysis"):
         framework = report["framework_analysis"]
         framework_panel = Panel.fit(
@@ -211,6 +273,20 @@ def display_text_report(report: SecurityAnalysisReport, args: argparse.Namespace
             padding=(1, 2)
         )
         console.print(framework_panel)
+    """
+    if report.get("framework_analysis"):
+        framework = report["framework_analysis"]
+        framework_panel = Panel.fit(
+            f"[green]Technology:[/green] {framework.get('name', 'Unknown')} "
+            f"({framework.get('type', 'Unknown')})\n"
+            f"[green]Version:[/green] {framework.get('version', 'Unknown')}\n"
+            f"[green]Confidence:[/green] {framework.get('confidence', 0)*100:.1f}%\n"
+            f"[green]Common Vulnerabilities:[/green] {', '.join(framework.get('vulnerabilities', [])[:3]) or 'None'}",
+            title="Technology Stack Detection",
+            border_style="green",
+            padding=(1, 2)
+        )
+        console.print(framework_panel)
 
     # Security headers table
     if report["headers"]:
@@ -218,10 +294,10 @@ def display_text_report(report: SecurityAnalysisReport, args: argparse.Namespace
         headers_to_display = []
         sensitive_headers = {"server", "x-powered-by", "x-aspnet-version"}
         
-        for finding in report["headers"]:
-            header_name = finding["header"].lower()
+        for finding in report.get("headers", []):
+            header_name = finding.get("header", "").lower()
             
-            if args.hide_sensitive and header_name in sensitive_headers:
+            if hide_sensitive and header_name in sensitive_headers:
                 continue
                 
             headers_to_display.append(finding)
@@ -241,11 +317,11 @@ def display_text_report(report: SecurityAnalysisReport, args: argparse.Namespace
             table.add_column("CVSS", justify="right", width=6)
             
             for finding in headers_to_display:
-                status = finding["status"]
-                value = finding["value"]
+                status = finding.get("status", RiskLevel.INFO)
+                value = finding.get("value", "")
                 
                 if not args.full and len(value) > 50:
-                    value = value[:47] + "..."
+                    value = value[:50] + "..."
                 
                 status_color = {
                     RiskLevel.CRITICAL: "red",
@@ -253,21 +329,23 @@ def display_text_report(report: SecurityAnalysisReport, args: argparse.Namespace
                     RiskLevel.MEDIUM: "yellow",
                     RiskLevel.LOW: "blue",
                     RiskLevel.PASS: "green",
-                    RiskLevel.INFO: "cyan"
+                    RiskLevel.INFO: "cyan",
+                    RiskLevel.ERROR: "magenta"
                 }.get(status, "white")
                 
                 # Highlight security headers differently
-                if finding["header"] in SECURITY_HEADERS:
+                header_name = finding.get("header", "")
+                if header_name in SECURITY_HEADERS:
                     header_style = "bold cyan"
                 else:
                     header_style = "cyan"
                 
                 table.add_row(
-                    Text(finding["header"], style=header_style),
+                    Text(header_name, style=header_style),
                     value,
                     Text(status.name, style=status_color),
                     finding.get("issue", ""),
-                    str(finding["cvss_score"])
+                    str(finding.get("cvss_score", 0.0))
                 )
             
             console.print(table)
@@ -322,8 +400,9 @@ def generate_recommendations(report: SecurityAnalysisReport) -> List[str]:
     critical_findings = []
     
     # Process header findings
-    for finding in report["headers"]:
-        if finding["status"] in [RiskLevel.CRITICAL, RiskLevel.HIGH] and finding.get("recommendation", ""):
+    for finding in report.get("headers", []):
+        status = finding.get("status")
+        if status and status in [RiskLevel.CRITICAL, RiskLevel.HIGH] and finding.get("recommendation", ""):
             critical_findings.append(finding)
     
     # Add critical header recommendations
@@ -341,31 +420,38 @@ def generate_recommendations(report: SecurityAnalysisReport) -> List[str]:
     # Add framework-specific recommendations
     if report.get("framework_analysis"):
         framework = report["framework_analysis"]
-        if framework["name"] == "WordPress":
+        name = framework.get("name")
+        if name == "WordPress":
             recommendations.append("Update WordPress core and plugins to latest versions")
             recommendations.append("Implement Web Application Firewall (WAF)")
             recommendations.append("Disable XML-RPC if not needed")
-        elif framework["name"] == "Django":
+        elif name == "Django":
             recommendations.append("Ensure DEBUG=False in production settings")
             recommendations.append("Implement security middleware for headers")
-        elif framework["name"] == "React":
+        elif name == "React":
             recommendations.append("Implement Content Security Policy (CSP) with nonces")
             recommendations.append("Sanitize all user inputs to prevent XSS")
     
-    # Add TLS recommendations
-    tls = report["tls_analysis"]
-    if tls["grade"] in ["D", "F"]:
-        recommendations.append(f"Upgrade TLS configuration from {tls['version']} to TLS 1.2 or higher")
-    if "POODLE" in tls["vulnerabilities"]:
-        recommendations.append("Disable SSLv3 to mitigate POODLE vulnerability")
-    if "BEAST" in tls["vulnerabilities"]:
-        recommendations.append("Enable TLS 1.1+ and disable TLS 1.0 to mitigate BEAST vulnerability")
-    
+    # Add TLS recommendations - with null checking
+    tls = report.get("tls_analysis")
+    if tls:
+        grade = tls.get("grade")
+        version = tls.get("version", "current version")
+        vulnerabilities = tls.get("vulnerabilities", [])
+
+        if grade in ["D", "F"]:
+            recommendations.append(f"Upgrade TLS configuration from {version} to TLS 1.2 or higher")
+        if "POODLE" in vulnerabilities:
+            recommendations.append("Disable SSLv3 to mitigate POODLE vulnerability")
+        if "BEAST" in vulnerabilities:
+            recommendations.append("Enable TLS 1.1+ and disable TLS 1.0 to mitigate BEAST vulnerability")
+
     # Add general recommendations
-    if not any(f["header"] == "Content-Security-Policy" for f in report["headers"]):
+    headers = report.get("headers", [])
+    if not any(f.get("header") == "Content-Security-Policy" for f in headers):
         recommendations.append("Implement Content Security Policy (CSP) header")
     
-    if not any(f["header"] == "Strict-Transport-Security" for f in report["headers"]):
+    if not any(f.get("header") == "Strict-Transport-Security" for f in headers):
         recommendations.append("Implement Strict-Transport-Security (HSTS) header")
     
     return recommendations

@@ -5,6 +5,7 @@ Comprehensive security header analysis
 import re
 import ssl
 import socket
+import tls_parser
 from datetime import datetime
 from typing import Dict, List, Optional
 from http_header_scanner.models.findings import (
@@ -122,13 +123,14 @@ class SecurityAnalyzer:
         # Parse CSP directives
         directives = [d.strip() for d in policy.split(';') if d.strip()]
         for directive in directives:
-            parts = directive.split()
+            parts = directive.split(maxsplit=1)
             if parts:
                 directive_name = parts[0].lower()
-                analysis["directives"][directive_name] = parts[1:]
+                values = parts[1].split() if len(parts) > 1 else []
+                analysis["directives"][directive_name] = values
         
         # Check for unsafe directives
-        unsafe_terms = ["'unsafe-inline'", "'unsafe-eval'", "http:", "*"]
+        unsafe_terms = ["'unsafe-inline'", "'unsafe-eval'", "http:", "*", "data:"]
         for directive, values in analysis["directives"].items():
             for term in unsafe_terms:
                 if term in values:
@@ -173,9 +175,23 @@ class SecurityAnalyzer:
         return analysis
     
     def _analyze_tls(self, url: str) -> TLSFinding:
-        """Analyze TLS configuration"""
+        """Analyze TLS configuration using tls-parser"""
         try:
             hostname = url.split("//")[-1].split("/")[0].split(":")[0]
+            port = 443
+
+            # Get TLS connection info
+            scanner = TLSScanner(hostname, port)
+            scan_result = scanner.scan()
+
+            return {
+                "version": scan_result.tls_version,
+                "grade": scan_result.grade,
+                "supported_protocols": scan_result.supported_protocols,
+                "cipher_strength": scan_result.cipher_strength,
+                "vulnerabilities": scan_result.vulnerabilities
+            }
+            """
             context = ssl.create_default_context()
             context.set_ciphers("ALL:@SECLEVEL=1")
             
@@ -192,6 +208,7 @@ class SecurityAnalyzer:
                 "cipher_strength": cipher[0] if cipher else "Unknown",
                 "vulnerabilities": self._get_tls_vulnerabilities(tls_version)
             }
+            """
         except Exception as e:
             return {
                 "version": "Error",

@@ -13,6 +13,7 @@ class RiskLevel(str, Enum):
     LOW = "Low"
     INFO = "Info"
     PASS = "Pass"
+    ERROR = "Error"
 
 class HeaderFinding(TypedDict):
     header: str
@@ -22,6 +23,7 @@ class HeaderFinding(TypedDict):
     recommendation: str
     cvss_score: float
     references: List[str]
+    exploit_poc: Optional[str]
 
 class ContentSecurityPolicyAnalysis(TypedDict):
     directives: Dict[str, List[str]]
@@ -31,6 +33,7 @@ class ContentSecurityPolicyAnalysis(TypedDict):
     score: int
     risk_level: RiskLevel
     recommendation: List[str]
+    exploit_scenarios: List[str]
 
 class TLSFinding(TypedDict):
     version: str
@@ -38,6 +41,7 @@ class TLSFinding(TypedDict):
     supported_protocols: List[str]
     cipher_strength: str
     vulnerabilities: List[str]
+    certificate_issues: List[str]
 
 class FrameworkFinding(TypedDict):
     name: str
@@ -46,6 +50,7 @@ class FrameworkFinding(TypedDict):
     confidence: float
     vulnerabilities: List[str]
     recommendation: List[str]
+    version_vulnerabilities: Dict[str, List[str]]
 
 class SecurityAnalysisReport(TypedDict):
     url: str
@@ -59,3 +64,4 @@ class SecurityAnalysisReport(TypedDict):
     total_score: float
     metrics: Dict[str, float]
     timestamp: str
+    error: Optional[str]

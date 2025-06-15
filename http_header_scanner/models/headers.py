@@ -11,6 +11,7 @@ class HeaderRiskLevel(str, Enum):
     MEDIUM = "Medium"
     LOW = "Low"
     INFO = "Informational"
+    ERROR = "Error"
 
 class HeaderCategory(str, Enum):
     TRANSPORT_SECURITY = "Transport Security"

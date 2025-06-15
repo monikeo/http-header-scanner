@@ -1,0 +1,633 @@
+{
+  "WordPress": {
+    "type": "CMS",
+    "indicators": {
+      "header_patterns": {
+        "X-Powered-By": "WordPress",
+        "Link": "rel=https://api\\.w\\.org/",
+        "Set-Cookie": "wordpress(?:_logged_in)?_[a-f0-9]+"
+      },
+      "content_patterns": [
+        "<meta name=[\"']generator[\"'] content=[\"']WordPress",
+        "wp-content/(themes|plugins)/",
+        "/wp-admin/",
+        "/wp-includes/",
+        "wp-json/"
+      ],
+      "javascript_vars": ["wpApiSettings", "wpEmojiSettings"],
+      "meta_tags": [
+        "<meta name=[\"']generator[\"'] content=[\"']WordPress"
+      ],
+      "common_paths": ["/wp-admin", "/wp-login.php", "/wp-content"],
+      "version_detection": {
+        "meta": "content=[\"']WordPress (\\d+\\.\\d+(?:\\.\\d+)?)[\"']",
+        "readme": "Version (\\d+\\.\\d+(?:\\.\\d+)?)"
+      },
+      "html_fingerprints": [
+        "id=\"wp-admin-bar\"",
+        "class=\"wp-image-"
+      ],
+      "script_fingerprints": [
+        "wp-includes/js/wp-embed.min.js",
+        "wp-content/themes/"
+      ]
+    },
+    "security_guidelines": {
+      "headers": {
+        "Content-Security-Policy": "Implement strict CSP with nonce/hash for scripts",
+        "X-Content-Type-Options": "Always set to 'nosniff'"
+      },
+      "general": [
+        "Keep WordPress core and plugins updated",
+        "Implement web application firewall",
+        "Disable XML-RPC if not needed"
+      ]
+    },
+    "common_vulnerabilities": [
+      "XML-RPC abuse",
+      "User enumeration",
+      "Plugin vulnerabilities",
+      "Brute force attacks"
+    ],
+    "common_ports": [80, 443]
+  },
+  "React": {
+    "type": "FRONTEND",
+    "indicators": {
+      "header_patterns": {},
+      "content_patterns": [
+        "<div id=[\"']root[\"']></div>",
+        "react-dom.production.min.js",
+        "__reactContainer"
+      ],
+      "javascript_vars": ["React", "ReactDOM", "__REACT_DEVTOOLS_GLOBAL_HOOK__"],
+      "meta_tags": [],
+      "common_paths": ["/static/js/main.", "/manifest.json"],
+      "version_detection": {
+        "script": "react@(\\d+\\.\\d+\\.\\d+)/"
+      },
+      "html_fingerprints": [
+        "data-reactroot",
+        "data-reactid"
+      ],
+      "script_fingerprints": [
+        "/static/js/main.\\w{8}.js",
+        "react.production.min.js"
+      ]
+    },
+    "security_guidelines": {
+      "headers": {
+        "Content-Security-Policy": "Use nonce-based CSP",
+        "X-Frame-Options": "Set to DENY"
+      },
+      "general": [
+        "Sanitize all user inputs to prevent XSS",
+        "Use React's built-in XSS protection mechanisms",
+        "Implement proper state management"
+      ]
+    },
+    "common_vulnerabilities": [
+      "XSS via dangerouslySetInnerHTML",
+      "State injection vulnerabilities",
+      "Server-side rendering XSS"
+    ],
+    "common_ports": [3000, 80, 443]
+  },
+  "Next.js": {
+    "type": "SSR",
+    "indicators": {
+      "header_patterns": {
+        "X-Powered-By": "Next\\.js"
+      },
+      "content_patterns": [
+        "__next",
+        "next\\.js",
+        "next-client-pages-loader"
+      ],
+      "javascript_vars": ["__NEXT_DATA__", "__NEXT_LOADED_PAGES__"],
+      "meta_tags": [
+        "<meta name=[\"']next-head-count[\"']"
+      ],
+      "common_paths": ["/_next/static/", "/_next/data/"],
+      "version_detection": {
+        "script": "next@(\\d+\\.\\d+\\.\\d+)/"
+      },
+      "html_fingerprints": [
+        "id=\"__next\"",
+        "data-next-page"
+      ],
+      "script_fingerprints": [
+        "/_next/static/chunks/main-",
+        "next/dist"
+      ]
+    },
+    "security_guidelines": {
+      "headers": {
+        "Strict-Transport-Security": "Include 'preload' directive",
+        "Content-Security-Policy": "Implement strict policy for SSR"
+      },
+      "general": [
+        "Validate API routes inputs",
+        "Secure server-side operations",
+        "Use middleware for security headers"
+      ]
+    },
+    "common_vulnerabilities": [
+      "SSRF via server-side functions",
+      "API route injection",
+      "Server-side XSS"
+    ],
+    "common_ports": [3000, 80, 443]
+  },
+  "Django": {
+    "type": "BACKEND",
+    "indicators": {
+      "header_patterns": {
+        "Server": "WSGIServer",
+        "X-Frame-Options": "DENY|SAMEORIGIN",
+        "Set-Cookie": "csrftoken="
+      },
+      "content_patterns": [
+        "csrfmiddlewaretoken",
+        "Django Administration"
+      ],
+      "javascript_vars": [],
+      "meta_tags": [],
+      "common_paths": ["/admin/", "/static/admin/"],
+      "version_detection": {
+        "content": "Django (\\d+\\.\\d+(?:\\.\\d+)?)"
+      },
+      "html_fingerprints": [
+        "name=[\"']csrfmiddlewaretoken[\"']",
+        "powered by <a href=[\"']https://www.djangoproject.com/[\"']"
+      ],
+      "script_fingerprints": [
+        "/static/admin/js/"
+      ]
+    },
+    "security_guidelines": {
+      "headers": {
+        "Content-Security-Policy": "Implement for admin interface",
+        "X-Content-Type-Options": "Set to 'nosniff'"
+      },
+      "general": [
+        "Set DEBUG=False in production",
+        "Use security middleware",
+        "Regularly update dependencies"
+      ]
+    },
+    "common_vulnerabilities": [
+      "SQL injection through ORM misuse",
+      "CSRF protection bypass",
+      "Template injection"
+    ],
+    "common_ports": [8000, 80, 443]
+  },
+  "Laravel": {
+    "type": "BACKEND",
+    "indicators": {
+      "header_patterns": {
+        "Set-Cookie": "laravel_session=",
+        "X-Powered-By": "Laravel"
+      },
+      "content_patterns": [
+        "/vendor/laravel/framework/",
+        "window\\.Laravel = {"
+      ],
+      "javascript_vars": ["Laravel"],
+      "meta_tags": [],
+      "common_paths": ["/login", "/register"],
+      "version_detection": {
+        "header": "laravel/(\\d+\\.\\d+\\.\\d+)"
+      },
+      "html_fingerprints": [
+        "csrf-token"
+      ],
+      "script_fingerprints": [
+        "/js/app.js"
+      ]
+    },
+    "security_guidelines": {
+      "headers": {
+        "X-XSS-Protection": "Set to '1; mode=block'",
+        "Referrer-Policy": "Set to 'no-referrer-when-downgrade'"
+      },
+      "general": [
+        "Use prepared statements for database queries",
+        "Validate all user inputs",
+        "Protect against mass assignment"
+      ]
+    },
+    "common_vulnerabilities": [
+      "Mass assignment vulnerabilities",
+      "Blade template injection",
+      "Insecure direct object references"
+    ],
+    "common_ports": [8000, 80, 443]
+  },
+  "Angular": {
+    "type": "FRONTEND",
+    "indicators": {
+      "header_patterns": {},
+      "content_patterns": [
+        "ng-app",
+        "ng-version"
+      ],
+      "javascript_vars": ["ng", "Zone"],
+      "meta_tags": [],
+      "common_paths": ["/assets/", "/main."],
+      "version_detection": {
+        "content": "ng-version=[\"'](\\d+\\.\\d+\\.\\d+)[\"']"
+      },
+      "html_fingerprints": [
+        "ng-app",
+        "[ng-"
+      ],
+      "script_fingerprints": [
+        "runtime\\.\\w{20}\\.js",
+        "polyfills\\.\\w{20}\\.js"
+      ]
+    },
+    "security_guidelines": {
+      "headers": {
+        "Content-Security-Policy": "Implement strict policy",
+        "X-Content-Type-Options": "Set to 'nosniff'"
+      },
+      "general": [
+        "Sanitize inputs with DomSanitizer",
+        "Avoid using bypassSecurityTrust APIs",
+        "Implement route guards"
+      ]
+    },
+    "common_vulnerabilities": [
+      "DOM XSS via insecure templates",
+      "Client-side template injection",
+      "Authorization bypass"
+    ],
+    "common_ports": [4200, 80, 443]
+  },
+  "Vue.js": {
+    "type": "FRONTEND",
+    "indicators": {
+      "header_patterns": {},
+      "content_patterns": [
+        "__vue__",
+        "vue.min.js"
+      ],
+      "javascript_vars": ["Vue", "__VUE_DEVTOOLS_GLOBAL_HOOK__"],
+      "meta_tags": [],
+      "common_paths": ["/js/app.", "/css/app."],
+      "version_detection": {
+        "script": "vue@(\\d+\\.\\d+\\.\\d+)/"
+      },
+      "html_fingerprints": [
+        "data-v-",
+        "v-bind:"
+      ],
+      "script_fingerprints": [
+        "/js/chunk-vendors.",
+        "vue.runtime."
+      ]
+    },
+    "security_guidelines": {
+      "headers": {
+        "Content-Security-Policy": "Use nonce-based approach",
+        "X-XSS-Protection": "Set to '1; mode=block'"
+      },
+      "general": [
+        "Use v-html directive cautiously",
+        "Sanitize user inputs before rendering",
+        "Implement Vuex security best practices"
+      ]
+    },
+    "common_vulnerabilities": [
+      "XSS via v-html injection",
+      "Vuex state manipulation",
+      "Client-side route hijacking"
+    ],
+    "common_ports": [8080, 80, 443]
+  },
+  "Express": {
+    "type": "BACKEND",
+    "indicators": {
+      "header_patterns": {
+        "X-Powered-By": "Express"
+      },
+      "content_patterns": [],
+      "javascript_vars": [],
+      "meta_tags": [],
+      "common_paths": ["/public/", "/static/"],
+      "version_detection": {
+        "header": "Express/(\\d+\\.\\d+\\.\\d+)"
+      },
+      "html_fingerprints": [],
+      "script_fingerprints": []
+    },
+    "security_guidelines": {
+      "headers": {
+        "X-Content-Type-Options": "Set to 'nosniff'",
+        "X-DNS-Prefetch-Control": "Set to 'off'"
+      },
+      "general": [
+        "Use helmet middleware",
+        "Implement proper session management",
+        "Validate all inputs"
+      ]
+    },
+    "common_vulnerabilities": [
+      "Insecure middleware configuration",
+      "Route injection attacks",
+      "Prototype pollution"
+    ],
+    "common_ports": [3000, 80, 443]
+  },
+  "Spring Boot": {
+    "type": "BACKEND",
+    "indicators": {
+      "header_patterns": {
+        "X-Application-Context": "application",
+        "Set-Cookie": "JSESSIONID="
+      },
+      "content_patterns": [
+        "Whitelabel Error Page"
+      ],
+      "javascript_vars": [],
+      "meta_tags": [],
+      "common_paths": ["/actuator", "/error"],
+      "version_detection": {
+        "header": "Spring Boot/(\\d+\\.\\d+\\.\\d+)"
+      },
+      "html_fingerprints": [
+        "Whitelabel Error Page"
+      ],
+      "script_fingerprints": []
+    },
+    "security_guidelines": {
+      "headers": {
+        "X-Content-Type-Options": "Set to 'nosniff'",
+        "Content-Security-Policy": "Implement for web interfaces"
+      },
+      "general": [
+        "Secure actuator endpoints",
+        "Use Spring Security",
+        "Enable CSRF protection"
+      ]
+    },
+    "common_vulnerabilities": [
+      "Actuator information disclosure",
+      "Spring Expression Language injection",
+      "CSRF protection misconfiguration"
+    ],
+    "common_ports": [8080, 80, 443]
+  },
+  "Ruby on Rails": {
+    "type": "BACKEND",
+    "indicators": {
+      "header_patterns": {
+        "X-Powered-By": "Rails",
+        "Set-Cookie": "_rails-app-session="
+      },
+      "content_patterns": [
+        "csrf-token",
+        "rails-ujs"
+      ],
+      "javascript_vars": ["Rails"],
+      "meta_tags": [
+        "csrf-param"
+      ],
+      "common_paths": ["/assets/application-", "/rails/info"],
+      "version_detection": {
+        "content": "Rails (\\d+\\.\\d+\\.\\d+)"
+      },
+      "html_fingerprints": [
+        "data-turbolinks-track=[\"']reload[\"']"
+      ],
+      "script_fingerprints": [
+        "rails-ujs"
+      ]
+    },
+    "security_guidelines": {
+      "headers": {
+        "Content-Security-Policy": "Use nonce approach",
+        "X-Request-Id": "Consider removing"
+      },
+      "general": [
+        "Use strong parameters",
+        "Enable CSRF protection",
+        "Secure cookies"
+      ]
+    },
+    "common_vulnerabilities": [
+      "Mass assignment vulnerabilities",
+      "Insecure deserialization",
+      "View injection"
+    ],
+    "common_ports": [3000, 80, 443]
+  },
+  "ASP.NET": {
+    "type": "BACKEND",
+    "indicators": {
+      "header_patterns": {
+        "X-Powered-By": "ASP\\.NET",
+        "X-AspNet-Version": "\\d+\\.\\d+\\.\\d+",
+        "Set-Cookie": "ASP\\.NET_SessionId="
+      },
+      "content_patterns": [
+        "__VIEWSTATE",
+        "__VIEWSTATEGENERATOR"
+      ],
+      "javascript_vars": ["Sys.WebForms"],
+      "meta_tags": [],
+      "common_paths": ["/WebResource.axd"],
+      "version_detection": {
+        "header": "X-AspNet-Version: (\\d+\\.\\d+\\.\\d+)"
+      },
+      "html_fingerprints": [
+        "name=\"__VIEWSTATE\"",
+        "name=\"__EVENTVALIDATION\""
+      ],
+      "script_fingerprints": [
+        "WebResource.axd"
+      ]
+    },
+    "security_guidelines": {
+      "headers": {
+        "X-Content-Type-Options": "Set to 'nosniff'",
+        "X-Frame-Options": "Set to 'DENY'"
+      },
+      "general": [
+        "Enable request validation",
+        "Use AntiForgeryToken",
+        "Secure ViewState"
+      ]
+    },
+    "common_vulnerabilities": [
+      "ViewState MAC bypass",
+      "Request validation bypass",
+      "Insecure deserialization"
+    ],
+    "common_ports": [80, 443]
+  },
+  "Flask": {
+    "type": "BACKEND",
+    "indicators": {
+      "header_patterns": {
+        "Server": "Werkzeug"
+      },
+      "content_patterns": [
+        "flask_app = Flask\\(__name__\\)"
+      ],
+      "javascript_vars": [],
+      "meta_tags": [],
+      "common_paths": ["/static/"],
+      "version_detection": {
+        "content": "Flask/(\\d+\\.\\d+\\.\\d+)"
+      },
+      "html_fingerprints": [],
+      "script_fingerprints": []
+    },
+    "security_guidelines": {
+      "headers": {
+        "Content-Security-Policy": "Implement for Jinja templates",
+        "X-XSS-Protection": "Set to '1; mode=block'"
+      },
+      "general": [
+        "Use Flask-Security extension",
+        "Sanitize template inputs",
+        "Secure session cookies"
+      ]
+    },
+    "common_vulnerabilities": [
+      "Jinja2 template injection",
+      "Session fixation",
+      "CSRF protection bypass"
+    ],
+    "common_ports": [5000, 80, 443]
+  },
+  "Drupal": {
+    "type": "CMS",
+    "indicators": {
+      "header_patterns": {
+        "X-Generator": "Drupal"
+      },
+      "content_patterns": [
+        "drupal.js",
+        "Drupal.settings"
+      ],
+      "javascript_vars": ["Drupal"],
+      "meta_tags": [
+        "<meta name=[\"']Generator[\"'] content=[\"']Drupal"
+      ],
+      "common_paths": ["/sites/default/files/", "/user/login"],
+      "version_detection": {
+        "meta": "Drupal (\\d+\\.\\d+)"
+      },
+      "html_fingerprints": [
+        "class=\"drupal"
+      ],
+      "script_fingerprints": [
+        "core/misc/drupal.js"
+      ]
+    },
+    "security_guidelines": {
+      "headers": {
+        "Content-Security-Policy": "Implement strict policy",
+        "X-Content-Type-Options": "Set to 'nosniff'"
+      },
+      "general": [
+        "Keep core and modules updated",
+        "Use security modules",
+        "Restrict file permissions"
+      ]
+    },
+    "common_vulnerabilities": [
+      "Module vulnerabilities",
+      "SQL injection via Views",
+      "File upload bypass"
+    ],
+    "common_ports": [80, 443]
+  },
+  "Joomla": {
+    "type": "CMS",
+    "indicators": {
+      "header_patterns": {
+        "X-Content-Encoded-By": "Joomla"
+      },
+      "content_patterns": [
+        "/media/system/js/",
+        "joomla-script-"
+      ],
+      "javascript_vars": ["Joomla"],
+      "meta_tags": [
+        "<meta name=[\"']generator[\"'] content=[\"']Joomla"
+      ],
+      "common_paths": ["/administrator/", "/media/system/"],
+      "version_detection": {
+        "meta": "Joomla! - Open Source Content Management (\\d+\\.\\d+)"
+      },
+      "html_fingerprints": [
+        "class=\"moduletable"
+      ],
+      "script_fingerprints": [
+        "media/system/js/core.js"
+      ]
+    },
+    "security_guidelines": {
+      "headers": {
+        "Content-Security-Policy": "Implement for admin interface",
+        "X-XSS-Protection": "Set to '1; mode=block'"
+      },
+      "general": [
+        "Use two-factor authentication",
+        "Regularly update extensions",
+        "Protect administrator directory"
+      ]
+    },
+    "common_vulnerabilities": [
+      "Extension vulnerabilities",
+      "SQL injection",
+      "Template override attacks"
+    ],
+    "common_ports": [80, 443]
+  },
+  "Symfony": {
+    "type": "BACKEND",
+    "indicators": {
+      "header_patterns": {
+        "X-Powered-By": "Symfony"
+      },
+      "content_patterns": [
+        "Powered by Symfony"
+      ],
+      "javascript_vars": [],
+      "meta_tags": [],
+      "common_paths": ["/_profiler", "/_wdt"],
+      "version_detection": {
+        "content": "Symfony (\\d+\\.\\d+\\.\\d+)"
+      },
+      "html_fingerprints": [
+        "id=\"sfwdt"
+      ],
+      "script_fingerprints": [
+        "/bundles/framework/"
+      ]
+    },
+    "security_guidelines": {
+      "headers": {
+        "Content-Security-Policy": "Implement for web interfaces",
+        "X-Content-Type-Options": "Set to 'nosniff'"
+      },
+      "general": [
+        "Disable debug mode in production",
+        "Use security component",
+        "Validate all inputs"
+      ]
+    },
+    "common_vulnerabilities": [
+      "Debug mode information disclosure",
+      "Form tampering",
+      "Twig template injection"
+    ],
+    "common_ports": [8000, 80, 443]
+  }
+}
