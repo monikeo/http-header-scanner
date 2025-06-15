@@ -70,7 +70,7 @@ class ReportExporter:
         """
         pdf = FPDF()
         pdf.add_page()
-        pdf.set_font("Aeial", size=12)
+        pdf.set_font("Arial", size=12)
 
         # Title
         pdf.set_font_size(16)
