@@ -4,12 +4,15 @@
     "indicators": {
       "header_patterns": {
         "X-Powered-By": "WordPress",
+        "X-nginx-cache": "WordPress",
         "Link": "rel=https://api\\.w\\.org/",
-        "Set-Cookie": "wordpress(?:_logged_in)?_[a-f0-9]+"
+        "Set-Cookie": "wordpress(?:_logged_in)?_[a-f0-9]+",
+        "Set-Cookie": "wordpress_[a-f0-9]+"
       },
       "content_patterns": [
         "<meta name=[\"']generator[\"'] content=[\"']WordPress",
         "wp-content/(themes|plugins)/",
+        "wp-content",
         "/wp-admin/",
         "/wp-includes/",
         "wp-json/"
@@ -18,7 +21,7 @@
       "meta_tags": [
         "<meta name=[\"']generator[\"'] content=[\"']WordPress"
       ],
-      "common_paths": ["/wp-admin", "/wp-login.php", "/wp-content"],
+      "common_paths": ["/wp-admin", "/wp-login.php", "/wp-content", "/wp-json/"],
       "version_detection": {
         "meta": "content=[\"']WordPress (\\d+\\.\\d+(?:\\.\\d+)?)[\"']",
         "readme": "Version (\\d+\\.\\d+(?:\\.\\d+)?)"
@@ -58,11 +61,12 @@
       "content_patterns": [
         "<div id=[\"']root[\"']></div>",
         "react-dom.production.min.js",
-        "__reactContainer"
+        "__reactContainer",
+        "react-app"
       ],
       "javascript_vars": ["React", "ReactDOM", "__REACT_DEVTOOLS_GLOBAL_HOOK__"],
       "meta_tags": [],
-      "common_paths": ["/static/js/main.", "/manifest.json"],
+      "common_paths": ["/static/js/main.", "/manifest.json", "/static/js/", "/react/"],
       "version_detection": {
         "script": "react@(\\d+\\.\\d+\\.\\d+)/"
       },
@@ -72,7 +76,9 @@
       ],
       "script_fingerprints": [
         "/static/js/main.\\w{8}.js",
-        "react.production.min.js"
+        "react.production.min.js",
+        "react\\.\\w+\\.js",
+        "chunk-[0-9a-f]+\\.js"
       ]
     },
     "security_guidelines": {

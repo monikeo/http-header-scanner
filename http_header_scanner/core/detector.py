@@ -161,14 +161,17 @@ class FrameworkDetector:
         for name, framework in self.frameworks.items():
             confidence = 0.0
             version = None
+            matched_indicators = []
 
             # Header-based detection
             for header_name, pattern in framework.indicators.header_patterns.items():
-                if header_name in headers and pattern.search(headers[header_name]):
-                    confidence += 0.7
-                    version = self._extract_version(
-                        framework, headers[header_name], "header"
-                    ) or version
+                if header_name in headers:
+                    match = pattern.search(headers[header_name])
+                    if match:
+                        confidence += 0.7
+                        version = self._extract_version(
+                            framework, headers[header_name], "header") or version
+                        matched_indicators.append(f"Header: {header_name}")
 
             # Content-based detection
             if content:
@@ -176,11 +179,13 @@ class FrameworkDetector:
                 for fp in framework.indicators.html_fingerprints:
                     if fp in content_lower:
                         confidence += 0.8
+                        matched_indicators.appends(f"HTML: {fp}")
 
                 # Script fingerprint matching
                 for fp in framework.indicators.script_fingerprints:
-                    if fp in content_lower:
+                    if re.search(fp, content_lower):
                         confidence += 0.9
+                        matched_indicators.append(f"Script: {fp}")
 
                 # Meta tag detection
                 for pattern in framework.indicators.meta_tags:
@@ -190,11 +195,19 @@ class FrameworkDetector:
                         version = self._extract_version(
                             framework, match.group(), "meta"
                         ) or version
+                        matched_indicators.appends(f"Meta: {pattern.pattern}")
 
                 # JavaScript variable detection
                 for var in framework.indicators.javascript_vars:
                     if var in content:
                         confidence += 0.5
+                        matched_indicators.appends(f"JS Var: {var}")
+
+                # Path-based detection
+                for path in framework.indicators.common_paths:
+                    if path in url:
+                        confidence += 0.6
+                        matched_indicators.append(f"Path: {path}")
 
             # Version extraction from content
             if not version and content:
@@ -203,6 +216,7 @@ class FrameworkDetector:
             if confidence > 0.5:
                 framework.version = version
                 framework.confidence = min(confidence, 1.0)
+                framework.matched_indicators = matched_indicators
                 detected.append(framework)
         return sorted(detected, key=lambda f: f.confidence, reverse=True)[:3]
 

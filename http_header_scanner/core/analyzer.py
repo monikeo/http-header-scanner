@@ -5,7 +5,6 @@ Comprehensive security header analysis
 import re
 import ssl
 import socket
-import tls_parser
 from datetime import datetime
 from typing import Dict, List, Optional
 from http_header_scanner.models.findings import (
@@ -180,22 +179,10 @@ class SecurityAnalyzer:
             hostname = url.split("//")[-1].split("/")[0].split(":")[0]
             port = 443
 
-            # Get TLS connection info
-            scanner = TLSScanner(hostname, port)
-            scan_result = scanner.scan()
-
-            return {
-                "version": scan_result.tls_version,
-                "grade": scan_result.grade,
-                "supported_protocols": scan_result.supported_protocols,
-                "cipher_strength": scan_result.cipher_strength,
-                "vulnerabilities": scan_result.vulnerabilities
-            }
-            """
             context = ssl.create_default_context()
             context.set_ciphers("ALL:@SECLEVEL=1")
             
-            with socket.create_connection((hostname, 443)) as sock:
+            with socket.create_connection((hostname, port)) as sock:
                 with context.wrap_socket(sock, server_hostname=hostname) as ssock:
                     tls_version = ssock.version()
                     cipher = ssock.cipher()
@@ -208,7 +195,6 @@ class SecurityAnalyzer:
                 "cipher_strength": cipher[0] if cipher else "Unknown",
                 "vulnerabilities": self._get_tls_vulnerabilities(tls_version)
             }
-            """
         except Exception as e:
             return {
                 "version": "Error",
