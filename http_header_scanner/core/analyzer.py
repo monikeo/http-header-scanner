@@ -44,7 +44,7 @@ class SecurityAnalyzer:
                 "tls_analysis": self._analyze_tls(final_url),
                 "framework_analysis": None,
                 "overall_risk": RiskLevel.PASS,
-                "toral_score": 0.0,
+                "total_score": 0.0,
                 "metrics": {},
                 "timestamp": datetime.utcnow().isoformat()
         }

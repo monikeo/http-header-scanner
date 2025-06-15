@@ -105,11 +105,11 @@ def main():
         else:
             console.print("[red]CSV export requires multiple reports[/red]")
 
-def display_text_report(report: SecurityAnalysisReport)
+def display_text_report(report: SecurityAnalysisReport):
     """
     Display report in rich format text
     """
-     console.print(
+    console.print(
         Panel.fit(
             f"[bold]Security Header Analysis for {report['url']}[/bold]\n"
             f"[green]Final URL:[/green] {report['final_url']}\n"

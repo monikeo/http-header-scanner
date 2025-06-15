@@ -3,7 +3,7 @@ Security header definitions with metadata for analysis
 """
 
 from enum import Enum
-from typinig import Dict, List, TypedDict, Optional
+from typing import Dict, List, TypedDict, Optional
 
 class HeaderRiskLevel(str, Enum):
     CRITICAL = "Critical"

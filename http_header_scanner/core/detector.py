@@ -23,7 +23,7 @@ class FrameworkIndicator:
 @dataclass
 class Framework:
     name: str
-    type: FrmaeworkType
+    type: FrameworkType
     indicators: FrameworkIndicator
     common_ports: Set[int]
     security_guidelines: Dict[str, List[str]]

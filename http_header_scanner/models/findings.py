@@ -4,13 +4,14 @@ Data models for security findings and reports
 
 from enum import Enum
 from typing import Dict, List, Optional, TypedDict
-from .headers import headerRiskLevel
+from .headers import HeaderRiskLevel
 
 class RiskLevel(str, Enum):
     CRITICAL = "Critical"
     HIGH = "High"
     MEDIUM = "Medium"
     LOW = "Low"
+    INFO = "Info"
     PASS = "Pass"
 
 class HeaderFinding(TypedDict):

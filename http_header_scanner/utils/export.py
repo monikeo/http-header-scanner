@@ -5,7 +5,7 @@ Export functionality for various formats
 import csv
 import json
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 from fpdf import FPDF
 from http_header_scanner.models.findings import SecurityAnalysisReport
 

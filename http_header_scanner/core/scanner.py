@@ -47,14 +47,14 @@ class HeaderScanner:
             # Analyze response
             return self.analyzer.analyze(
                 url=url,
-                final_url=response.url
+                final_url=response.url,
                 status_code=response.status_code,
                 headers=dict(response.headers),
                 content=content
             )
         except requests.RequestException as e:
             # Return error report
-            return (
+            return {
                     "url": url,
                     "final_url": url,
                     "status_code": 0,
@@ -68,4 +68,4 @@ class HeaderScanner:
                     "timestamp": datetime.utcnow().isoformat(),
                     "error": str(e)
 
-            )
+            }
